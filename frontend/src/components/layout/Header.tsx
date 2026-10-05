@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { User, Project, HealthInfo } from "../../types";
-import { Folder, ChevronDown, Plus, Shield, User as UserIcon, LogOut, Database, AlertCircle, Cloud, AlertTriangle, Layers, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Folder, ChevronDown, Plus, Shield, User as UserIcon, LogOut, Database, AlertCircle, Cloud, AlertTriangle, Layers, PanelLeftClose, PanelLeftOpen, Search } from "lucide-react";
 
 interface HeaderProps {
   currentUser: User | null;
@@ -13,6 +13,7 @@ interface HeaderProps {
   onOpenAuth: () => void;
   onLogout: () => void;
   onOpenCopilot?: () => void;
+  onOpenCommandPalette?: () => void;
   storageType?: string;
   health?: HealthInfo | null;
   isSidebarCollapsed?: boolean;
@@ -28,6 +29,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAuth,
   onLogout,
   onOpenCopilot,
+  onOpenCommandPalette,
   storageType = "local",
   health,
   isSidebarCollapsed = false,
@@ -180,8 +182,22 @@ export const Header: React.FC<HeaderProps> = ({
 
         </div>
 
-        {/* Right: BioCopilot Button & User Menu */}
+        {/* Right: Search, BioCopilot Button & User Menu */}
         <div className="flex items-center gap-3">
+          {onOpenCommandPalette && (
+            <button
+              onClick={onOpenCommandPalette}
+              className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-all text-xs cursor-pointer shadow-2xs group"
+              title="Search commands and navigate (Ctrl+K or ⌘K)"
+            >
+              <Search className="w-3.5 h-3.5 text-slate-400 group-hover:text-teal-600 transition-colors" />
+              <span className="text-slate-400 group-hover:text-slate-600 font-medium">Quick search...</span>
+              <kbd className="ml-1 px-1.5 py-0.2 rounded bg-white border border-slate-200 text-[10px] font-mono text-slate-500 shadow-2xs">
+                ⌘K
+              </kbd>
+            </button>
+          )}
+
           {onOpenCopilot && (
             <button
               onClick={onOpenCopilot}

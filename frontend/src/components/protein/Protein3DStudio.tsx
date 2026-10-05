@@ -18,6 +18,7 @@ import {
   Pause,
 } from "lucide-react";
 import { RamachandranPlotCanvas } from "./RamachandranPlotCanvas";
+import { ProteinContactMapCanvas } from "./ProteinContactMapCanvas";
 
 interface Residue {
   index: number;
@@ -35,6 +36,7 @@ export const Protein3DStudio: React.FC = () => {
   const [zoomLevel, setZoomLevel] = useState(1);
   const [hoveredResidue, setHoveredResidue] = useState<Residue | null>(null);
   const [copiedFasta, setCopiedFasta] = useState(false);
+  const [structuralGraphicView, setStructuralGraphicView] = useState<"dual" | "ramachandran" | "contact_map">("dual");
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rotationRef = useRef({ x: 0.4, y: 0.6 });
@@ -434,51 +436,152 @@ export const Protein3DStudio: React.FC = () => {
         </div>
       </div>
 
-      {/* Interactive Residue Strip Inspector & Ramachandran Plot */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        <div className="lg:col-span-1">
-          <RamachandranPlotCanvas proteinName={currentProtein.name} residueCount={residues.length} />
-        </div>
-
-        <div className="lg:col-span-2 space-y-4">
-          <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-slate-400 font-medium flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-teal-400" />
-                Residue Sequence Inspector (hover to inspect atomic coordinates & pLDDT)
-              </span>
-              {hoveredResidue && (
-                <span className="text-teal-400 font-mono font-bold">
-                  Residue #{hoveredResidue.index}: {hoveredResidue.name} ({hoveredResidue.code}) &bull; pLDDT: {hoveredResidue.plddt} &bull; Type: {hoveredResidue.secStruct}
-                </span>
-              )}
-            </div>
-
-            <div className="flex flex-wrap gap-1 max-h-36 overflow-y-auto p-1 font-mono text-[11px]">
-              {residues.map((res) => (
-                <span
-                  key={res.index}
-                  onMouseEnter={() => setHoveredResidue(res)}
-                  className="px-1.5 py-0.5 rounded cursor-pointer transition-transform hover:scale-125 font-bold"
-                  style={{
-                    backgroundColor: getResidueColor(res, residues.length),
-                    color: "#ffffff",
-                  }}
-                  title={`Residue #${res.index}: ${res.name} (${res.code}) | pLDDT: ${res.plddt}`}
-                >
-                  {res.code}
-                </span>
-              ))}
-            </div>
+      {/* Advanced Structural Computing & Stereochemical Graphics */}
+      <div className="space-y-4">
+        {/* Structural Mode Tab Selector */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-slate-950/80 p-3 rounded-2xl border border-slate-800">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-violet-400" />
+            <span className="text-xs font-bold text-white uppercase tracking-wider">
+              Biophysical & Stereochemical Analysis
+            </span>
           </div>
 
-          <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300 leading-relaxed space-y-1.5">
-            <div className="text-violet-400 font-bold flex items-center gap-2">
-              <Dna className="w-4 h-4" /> Stereochemical Quality Assessment
+          <div className="flex items-center gap-1.5 bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs">
+            <button
+              onClick={() => setStructuralGraphicView("dual")}
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                structuralGraphicView === "dual"
+                  ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-xs"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              Dual Synchronous
+            </button>
+            <button
+              onClick={() => setStructuralGraphicView("ramachandran")}
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                structuralGraphicView === "ramachandran"
+                  ? "bg-violet-600 text-white shadow-xs"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              Ramachandran (Φ, Ψ)
+            </button>
+            <button
+              onClick={() => setStructuralGraphicView("contact_map")}
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                structuralGraphicView === "contact_map"
+                  ? "bg-teal-500 text-slate-950 shadow-xs"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              Residue Contact Matrix (Cα)
+            </button>
+          </div>
+        </div>
+
+        {/* Dynamic Structural Graphics Layout */}
+        {structuralGraphicView === "dual" && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            <RamachandranPlotCanvas proteinName={currentProtein.name} residueCount={residues.length} />
+            <ProteinContactMapCanvas proteinName={currentProtein.name} residues={residues} />
+          </div>
+        )}
+
+        {structuralGraphicView === "ramachandran" && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+            <div className="lg:col-span-1">
+              <RamachandranPlotCanvas proteinName={currentProtein.name} residueCount={residues.length} />
             </div>
-            <p className="text-[11px] text-slate-400">
-              The Ramachandran plot displays the sterically allowed torsional angles phi (Φ) and psi (Ψ). Residues clustering in the core alpha-helical and beta-sheet quadrants reflect high physical plausibility, with &lt; 1% steric clash outliers.
-            </p>
+            <div className="lg:col-span-2 space-y-3">
+              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300 leading-relaxed space-y-2">
+                <div className="text-violet-400 font-bold flex items-center gap-2">
+                  <Dna className="w-4 h-4" /> Stereochemical Quality Assessment
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  The Ramachandran plot displays sterically allowed torsional angles phi (Φ) and psi (Ψ). Residues clustering in the core alpha-helical and beta-sheet energy basins reflect high physical plausibility, with &lt; 1% steric clash outliers.
+                </p>
+                <div className="grid grid-cols-3 gap-2 pt-2 text-[10px]">
+                  <div className="p-2 rounded-lg bg-slate-900 border border-purple-500/20">
+                    <span className="font-bold text-purple-300">Alpha-Helical Core</span>
+                    <p className="text-slate-400 mt-0.5">Φ: -60°, Ψ: -45° (right-handed)</p>
+                  </div>
+                  <div className="p-2 rounded-lg bg-slate-900 border border-amber-500/20">
+                    <span className="font-bold text-amber-300">Beta-Sheet Extended</span>
+                    <p className="text-slate-400 mt-0.5">Φ: -135°, Ψ: +135° (pleated)</p>
+                  </div>
+                  <div className="p-2 rounded-lg bg-slate-900 border border-teal-500/20">
+                    <span className="font-bold text-teal-300">Left-Handed Alpha</span>
+                    <p className="text-slate-400 mt-0.5">Φ: +60°, Ψ: +45° (Glycine allowed)</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {structuralGraphicView === "contact_map" && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+            <div className="lg:col-span-2">
+              <ProteinContactMapCanvas proteinName={currentProtein.name} residues={residues} />
+            </div>
+            <div className="lg:col-span-1 space-y-3">
+              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300 leading-relaxed space-y-2">
+                <div className="text-teal-400 font-bold flex items-center gap-2">
+                  <Sparkles className="w-4 h-4" /> 2D Topology Interpretation
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  Residue-residue proximity matrices capture secondary and tertiary fold architectures independently of coordinate orientation.
+                </p>
+                <div className="space-y-2 text-[11px] pt-1">
+                  <div className="p-2 rounded-lg bg-slate-900 border border-purple-500/20">
+                    <span className="font-bold text-purple-300">Parallel bands to diagonal:</span>
+                    <p className="text-slate-400 mt-0.5">Thick bands indicate α-helices (i &plusmn; 4 hydrogen bonding).</p>
+                  </div>
+                  <div className="p-2 rounded-lg bg-slate-900 border border-amber-500/20">
+                    <span className="font-bold text-amber-300">Perpendicular lines:</span>
+                    <p className="text-slate-400 mt-0.5">Antiparallel β-sheet hairpins and inter-strand contacts.</p>
+                  </div>
+                  <div className="p-2 rounded-lg bg-slate-900 border border-teal-500/20">
+                    <span className="font-bold text-teal-300">Off-diagonal clusters:</span>
+                    <p className="text-slate-400 mt-0.5">Long-range tertiary domain folding and hydrophobic core packing.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Interactive Residue Strip Inspector */}
+        <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-slate-400 font-medium flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-teal-400" />
+              Residue Sequence Inspector (hover to inspect atomic coordinates & pLDDT)
+            </span>
+            {hoveredResidue && (
+              <span className="text-teal-400 font-mono font-bold">
+                Residue #{hoveredResidue.index}: {hoveredResidue.name} ({hoveredResidue.code}) &bull; pLDDT: {hoveredResidue.plddt} &bull; Type: {hoveredResidue.secStruct}
+              </span>
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-1 max-h-36 overflow-y-auto p-1 font-mono text-[11px]">
+            {residues.map((res) => (
+              <span
+                key={res.index}
+                onMouseEnter={() => setHoveredResidue(res)}
+                className="px-1.5 py-0.5 rounded cursor-pointer transition-transform hover:scale-125 font-bold"
+                style={{
+                  backgroundColor: getResidueColor(res, residues.length),
+                  color: "#ffffff",
+                }}
+                title={`Residue #${res.index}: ${res.name} (${res.code}) | pLDDT: ${res.plddt}`}
+              >
+                {res.code}
+              </span>
+            ))}
           </div>
         </div>
       </div>

@@ -17,6 +17,7 @@ import { JobDetailModal } from "../components/jobs/JobDetailModal";
 import { ClinicalECGStudio } from "../components/ecg/ClinicalECGStudio";
 import { Protein3DStudio } from "../components/protein/Protein3DStudio";
 import { BioCopilotModal } from "../components/copilot/BioCopilotModal";
+import { CommandPaletteModal } from "../components/layout/CommandPaletteModal";
 import { Bot } from "lucide-react";
 
 export default function WorkbenchPage() {
@@ -57,7 +58,50 @@ export default function WorkbenchPage() {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [detailJob, setDetailJob] = useState<Job | null>(null);
+
+  // Global Keyboard Shortcuts (Ctrl+B / Cmd+B for sidebar, Ctrl+K / Cmd+K for command palette, Ctrl+J for copilot)
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      const activeTag = document.activeElement?.tagName.toLowerCase();
+      const isInputFocused = activeTag === "input" || activeTag === "textarea" || activeTag === "select";
+
+      // Ctrl+B or Cmd+B to toggle sidebar collapse
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "b") {
+        e.preventDefault();
+        handleToggleSidebar();
+        return;
+      }
+
+      // Ctrl+K or Cmd+K to toggle Command Palette
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setIsCommandPaletteOpen((prev) => !prev);
+        return;
+      }
+
+      // Ctrl+J or Cmd+J to toggle BioCopilot
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "j") {
+        e.preventDefault();
+        setIsCopilotOpen((prev) => !prev);
+        return;
+      }
+
+      // Quick numbers 1-6 when not focused on an input field
+      if (!isInputFocused && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        if (e.key === "1") setCurrentView("overview");
+        else if (e.key === "2") setCurrentView("ecg-studio");
+        else if (e.key === "3") setCurrentView("protein-studio");
+        else if (e.key === "4") setCurrentView("ecg");
+        else if (e.key === "5") setCurrentView("protein");
+        else if (e.key === "6") setCurrentView("jobs");
+      }
+    };
+
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+  }, []);
 
   // Load initial health, user, and projects
   const initSession = useCallback(async () => {
@@ -161,6 +205,7 @@ export default function WorkbenchPage() {
           onOpenAuth={() => setIsAuthOpen(true)}
           onLogout={handleLogout}
           onOpenCopilot={() => setIsCopilotOpen(true)}
+          onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
           storageType={health?.storage.type || "local"}
           health={health}
           isSidebarCollapsed={isSidebarCollapsed}
@@ -254,6 +299,16 @@ export default function WorkbenchPage() {
         onClose={() => setDetailJob(null)}
         onCancelJob={handleCancelJob}
         onRetryJob={handleRetryJob}
+      />
+
+      {/* Spotlight Command Palette */}
+      <CommandPaletteModal
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        onNavigate={(v) => setCurrentView(v)}
+        onToggleSidebar={handleToggleSidebar}
+        onOpenCopilot={() => setIsCopilotOpen(true)}
+        isSidebarCollapsed={isSidebarCollapsed}
       />
     </div>
   );

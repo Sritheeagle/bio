@@ -17,6 +17,7 @@ import {
   Heart,
 } from "lucide-react";
 import { PoincarePlotCanvas } from "./PoincarePlotCanvas";
+import { EcgFrequencySpectrumCanvas } from "./EcgFrequencySpectrumCanvas";
 
 interface LeadData {
   id: string;
@@ -33,6 +34,7 @@ export const ClinicalECGStudio: React.FC = () => {
   const [filterMode, setFilterMode] = useState<"filtered" | "raw" | "comparison">("comparison");
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [noiseLevel, setNoiseLevel] = useState(15); // baseline wander + 50Hz hum simulation
+  const [diagnosticGraphicView, setDiagnosticGraphicView] = useState<"dual" | "poincare" | "psd">("dual");
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -394,44 +396,162 @@ export const ClinicalECGStudio: React.FC = () => {
         </div>
       </div>
 
-      {/* Nonlinear Poincaré Plot Phase-Space Graphic */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        <div className="lg:col-span-1">
-          <PoincarePlotCanvas bpm={bpm} noiseLevel={noiseLevel} />
+      {/* Advanced Scientific Computing & Diagnostic Graphics */}
+      <div className="space-y-4">
+        {/* Diagnostic Mode Tab Selector */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-slate-950/80 p-3 rounded-2xl border border-slate-800">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-teal-400" />
+            <span className="text-xs font-bold text-white uppercase tracking-wider">
+              Electrophysiological Graphics
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5 bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs">
+            <button
+              onClick={() => setDiagnosticGraphicView("dual")}
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                diagnosticGraphicView === "dual"
+                  ? "bg-gradient-to-r from-teal-500 to-cyan-500 text-slate-950 shadow-xs"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              Dual Synchronous
+            </button>
+            <button
+              onClick={() => setDiagnosticGraphicView("poincare")}
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                diagnosticGraphicView === "poincare"
+                  ? "bg-teal-500 text-slate-950 shadow-xs"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              Poincaré (Phase-Space)
+            </button>
+            <button
+              onClick={() => setDiagnosticGraphicView("psd")}
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                diagnosticGraphicView === "psd"
+                  ? "bg-teal-500 text-slate-950 shadow-xs"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              Welch PSD Spectrum
+            </button>
+          </div>
         </div>
 
+        {/* Dynamic Graphics Grid */}
+        {diagnosticGraphicView === "dual" && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            <PoincarePlotCanvas bpm={bpm} noiseLevel={noiseLevel} />
+            <EcgFrequencySpectrumCanvas bpm={bpm} noiseLevel={noiseLevel} />
+          </div>
+        )}
+
+        {diagnosticGraphicView === "poincare" && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+            <div className="lg:col-span-1">
+              <PoincarePlotCanvas bpm={bpm} noiseLevel={noiseLevel} />
+            </div>
+            <div className="lg:col-span-2 space-y-3">
+              <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                <Activity className="w-3.5 h-3.5 text-teal-400" /> Phase-Space Poincaré Dynamics
+              </h4>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase">SD1 (Instantaneous)</div>
+                  <div className="text-lg font-bold text-emerald-400 mt-0.5">24.2 ms</div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">Short-term vagal index</div>
+                </div>
+                <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase">SD2 (Continuous)</div>
+                  <div className="text-lg font-bold text-teal-400 mt-0.5">86.7 ms</div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">Long-term variability</div>
+                </div>
+                <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase">SD2 / SD1 Ratio</div>
+                  <div className="text-lg font-bold text-cyan-400 mt-0.5">3.58</div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">Sympathovagal balance</div>
+                </div>
+                <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase">Ellipse Area</div>
+                  <div className="text-lg font-bold text-amber-400 mt-0.5">6,590 ms²</div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">π &times; SD1 &times; SD2</div>
+                </div>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-400 leading-relaxed">
+                <span className="text-teal-400 font-bold">Phase-Space Interpretation:</span> The scatter of consecutive RR intervals (RR[n] vs RR[n+1]) reveals non-linear autonomic regulation. A classic comet-shaped ellipse indicates healthy sinus autonomic variability, whereas torpedo shapes indicate sympathetic hyperactivity.
+              </div>
+            </div>
+          </div>
+        )}
+
+        {diagnosticGraphicView === "psd" && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+            <div className="lg:col-span-2">
+              <EcgFrequencySpectrumCanvas bpm={bpm} noiseLevel={noiseLevel} />
+            </div>
+            <div className="lg:col-span-1 space-y-3">
+              <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                <Activity className="w-3.5 h-3.5 text-teal-400" /> Spectral Band Definitions
+              </h4>
+              <div className="space-y-2 text-xs">
+                <div className="p-3 bg-slate-950 rounded-xl border border-indigo-500/30">
+                  <div className="font-bold text-indigo-300">VLF (0.0033 – 0.04 Hz)</div>
+                  <div className="text-[11px] text-slate-400 mt-1">
+                    Influenced by thermoregulation, the renin-angiotensin-aldosterone system (RAAS), and peripheral vasomotor tone.
+                  </div>
+                </div>
+                <div className="p-3 bg-slate-950 rounded-xl border border-teal-500/30">
+                  <div className="font-bold text-teal-300">LF (0.04 – 0.15 Hz)</div>
+                  <div className="text-[11px] text-slate-400 mt-1">
+                    Reflects both sympathetic and parasympathetic activity mediated by the baroreceptor reflex loop (10-second Mayer rhythm).
+                  </div>
+                </div>
+                <div className="p-3 bg-slate-950 rounded-xl border border-emerald-500/30">
+                  <div className="font-bold text-emerald-300">HF (0.15 – 0.40 Hz)</div>
+                  <div className="text-[11px] text-slate-400 mt-1">
+                    Modulated primarily by cardiac vagal efferent activity coupled with respiration (Respiratory Sinus Arrhythmia, RSA).
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Live HRV Biometric Metrics Panel */}
-        <div className="lg:col-span-2 space-y-3">
+        <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
           <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
             <Activity className="w-3.5 h-3.5 text-teal-400" /> Autonomic Heart Rate Variability Indices
           </h4>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+            <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800">
               <div className="text-[10px] font-bold text-slate-400 uppercase">SDNN Metric</div>
               <div className="text-lg font-bold text-emerald-400 mt-0.5">68.4 ms</div>
               <div className="text-[10px] text-slate-500 mt-0.5">Normal autonomic tone</div>
             </div>
 
-            <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+            <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800">
               <div className="text-[10px] font-bold text-slate-400 uppercase">RMSSD (Vagal)</div>
               <div className="text-lg font-bold text-teal-400 mt-0.5">42.1 ms</div>
               <div className="text-[10px] text-slate-500 mt-0.5">Parasympathetic index</div>
             </div>
 
-            <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+            <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800">
               <div className="text-[10px] font-bold text-slate-400 uppercase">pNN50 Ratio</div>
               <div className="text-lg font-bold text-cyan-400 mt-0.5">18.7 %</div>
               <div className="text-[10px] text-slate-500 mt-0.5">&gt; 50ms successive intervals</div>
             </div>
 
-            <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+            <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800">
               <div className="text-[10px] font-bold text-slate-400 uppercase">LF / HF Ratio</div>
               <div className="text-lg font-bold text-amber-400 mt-0.5">1.45</div>
               <div className="text-[10px] text-slate-500 mt-0.5">Sympathovagal balance</div>
             </div>
           </div>
 
-          <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-400 leading-relaxed">
+          <div className="p-3 rounded-xl bg-slate-900/40 border border-slate-800/80 text-[11px] text-slate-400 leading-relaxed">
             <span className="text-teal-400 font-bold">Clinical Annotation:</span> SD1 represents the standard deviation of instantaneous beat-to-beat variability (vagal parasympathetic control), while SD2 represents continuous autonomic modulation. A classic comet-shaped ellipse indicates healthy sinus autonomic variability.
           </div>
         </div>

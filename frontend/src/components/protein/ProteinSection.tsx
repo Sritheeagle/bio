@@ -5,6 +5,7 @@ import { Project, Job, ProteinBenchmark, ProteinPredictionResult } from "../../t
 import { api } from "../../lib/api";
 import { MolecularViewer } from "./MolecularViewer";
 import { RamachandranPlotCanvas } from "./RamachandranPlotCanvas";
+import { ProteinContactMapCanvas } from "./ProteinContactMapCanvas";
 import {
   Dna,
   UploadCloud,
@@ -813,11 +814,28 @@ export const ProteinSection: React.FC<ProteinSectionProps> = ({
                     </div>
                   </div>
 
-                  {/* Stereochemical Quality & Ramachandran Map */}
-                  <div className="space-y-2">
+                  {/* Advanced Biophysical & Stereochemical Graphics: Ramachandran + Contact Matrix */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <RamachandranPlotCanvas
                       proteinName={proteinResult.header || "Predicted Structure"}
                       residueCount={proteinResult.sequence_length || 50}
+                    />
+                    <ProteinContactMapCanvas
+                      proteinName={proteinResult.header || "Predicted Structure"}
+                      residues={Array.from({ length: proteinResult.sequence_length || 50 }, (_, i) => {
+                        const defaultSeq = "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG";
+                        const letters = "ACDEFGHIKLMNPQRSTVWY";
+                        const code = defaultSeq[i] || letters[i % letters.length];
+                        const secStruct: "helix" | "sheet" | "coil" = i % 14 < 7 ? "helix" : i % 14 < 11 ? "sheet" : "coil";
+                        const plddt = proteinResult.per_residue_plddt?.[i] ?? (proteinResult.mean_plddt || 88);
+                        return {
+                          index: i + 1,
+                          code,
+                          name: code,
+                          plddt,
+                          secStruct,
+                        };
+                      })}
                     />
                   </div>
 

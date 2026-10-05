@@ -5,6 +5,7 @@ import { Project, Job, SyntheticPattern, ECGAnalysisResult } from "../../types";
 import { api } from "../../lib/api";
 import { ECGWaveformChart } from "./ECGWaveformChart";
 import { PoincarePlotCanvas } from "./PoincarePlotCanvas";
+import { EcgFrequencySpectrumCanvas } from "./EcgFrequencySpectrumCanvas";
 import {
   Activity,
   UploadCloud,
@@ -764,9 +765,13 @@ export const ECGSection: React.FC<ECGSectionProps> = ({
                     </div>
                   )}
 
-                  {/* Nonlinear Phase-Space Dynamics */}
-                  <div className="space-y-2">
+                  {/* Advanced Electrophysiological Visual Computing: Poincaré + Welch PSD */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <PoincarePlotCanvas
+                      bpm={Math.round(ecgResult.mean_hr_bpm || 72)}
+                      noiseLevel={Math.min(50, Math.round((ecgResult.sdnn_ms || 40) / 2))}
+                    />
+                    <EcgFrequencySpectrumCanvas
                       bpm={Math.round(ecgResult.mean_hr_bpm || 72)}
                       noiseLevel={Math.min(50, Math.round((ecgResult.sdnn_ms || 40) / 2))}
                     />
