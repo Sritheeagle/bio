@@ -12,6 +12,7 @@ interface HeaderProps {
   onOpenNewProject: () => void;
   onOpenAuth: () => void;
   onLogout: () => void;
+  onOpenCopilot?: () => void;
   storageType?: string;
   health?: HealthInfo | null;
 }
@@ -24,6 +25,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenNewProject,
   onOpenAuth,
   onLogout,
+  onOpenCopilot,
   storageType = "local",
   health,
 }) => {
@@ -159,8 +161,19 @@ export const Header: React.FC<HeaderProps> = ({
 
         </div>
 
-        {/* Right: User Menu */}
+        {/* Right: BioCopilot Button & User Menu */}
         <div className="flex items-center gap-3">
+          {onOpenCopilot && (
+            <button
+              onClick={onOpenCopilot}
+              className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+              title="Open BioCopilot AI Assistant"
+            >
+              <span className="w-2 h-2 rounded-full bg-slate-950 animate-ping"></span>
+              <span>BioCopilot AI</span>
+            </button>
+          )}
+
           {currentUser ? (
             <div className="relative">
               <button

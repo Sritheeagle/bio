@@ -14,6 +14,10 @@ import { SettingsSection } from "../components/settings/SettingsSection";
 import { AuthModal } from "../components/auth/AuthModal";
 import { ProjectModal } from "../components/projects/ProjectModal";
 import { JobDetailModal } from "../components/jobs/JobDetailModal";
+import { ClinicalECGStudio } from "../components/ecg/ClinicalECGStudio";
+import { Protein3DStudio } from "../components/protein/Protein3DStudio";
+import { BioCopilotModal } from "../components/copilot/BioCopilotModal";
+import { Bot } from "lucide-react";
 
 export default function WorkbenchPage() {
   const [currentView, setCurrentView] = useState<NavView>("overview");
@@ -26,6 +30,7 @@ export default function WorkbenchPage() {
   // Modals
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+  const [isCopilotOpen, setIsCopilotOpen] = useState(false);
   const [detailJob, setDetailJob] = useState<Job | null>(null);
 
   // Load initial health, user, and projects
@@ -127,10 +132,10 @@ export default function WorkbenchPage() {
           onOpenNewProject={() => setIsProjectModalOpen(true)}
           onOpenAuth={() => setIsAuthOpen(true)}
           onLogout={handleLogout}
+          onOpenCopilot={() => setIsCopilotOpen(true)}
           storageType={health?.storage.type || "local"}
           health={health}
         />
-
 
         <main className="flex-1 overflow-y-auto p-6 md:p-8">
           <div className="max-w-6xl mx-auto">
@@ -145,12 +150,16 @@ export default function WorkbenchPage() {
               />
             )}
 
+            {currentView === "ecg-studio" && <ClinicalECGStudio />}
+
             {currentView === "ecg" && (
               <ECGSection
                 activeProject={activeProject}
                 onJobStarted={() => reloadJobs()}
               />
             )}
+
+            {currentView === "protein-studio" && <Protein3DStudio />}
 
             {currentView === "protein" && (
               <ProteinSection
@@ -176,6 +185,20 @@ export default function WorkbenchPage() {
           </div>
         </main>
       </div>
+
+      {/* Floating BioCopilot Trigger Button */}
+      <button
+        onClick={() => setIsCopilotOpen(true)}
+        className="fixed bottom-6 right-6 z-40 p-3.5 rounded-2xl bg-gradient-to-tr from-teal-500 to-cyan-400 hover:from-teal-400 hover:to-cyan-300 text-slate-950 font-bold shadow-2xl flex items-center gap-2.5 transition-all hover:scale-105 active:scale-95 cursor-pointer border border-white/20"
+        title="Open BioCopilot AI Research Assistant"
+      >
+        <Bot className="w-5 h-5" />
+        <span className="text-xs font-extrabold pr-1 hidden sm:inline">BioCopilot AI</span>
+        <span className="w-2 h-2 rounded-full bg-slate-950 animate-ping"></span>
+      </button>
+
+      {/* BioCopilot Modal */}
+      <BioCopilotModal isOpen={isCopilotOpen} onClose={() => setIsCopilotOpen(false)} />
 
       {/* Modals */}
       <AuthModal

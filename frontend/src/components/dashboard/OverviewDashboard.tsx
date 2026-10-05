@@ -12,6 +12,7 @@ import {
   Layers,
   Sparkles,
 } from "lucide-react";
+import { CloudTelemetrySection } from "./CloudTelemetrySection";
 
 interface OverviewDashboardProps {
   jobs: Job[];
@@ -110,6 +111,9 @@ export const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Cloud & Cluster Telemetry with Live Metrics & Audit Export */}
+      <CloudTelemetrySection health={health} />
 
       {/* Two Main Workflows Launch Cards */}
       <div className="space-y-3">

@@ -12,7 +12,7 @@ import {
   Server,
 } from "lucide-react";
 
-export type NavView = "overview" | "ecg" | "protein" | "jobs" | "settings" | "admin";
+export type NavView = "overview" | "ecg" | "ecg-studio" | "protein" | "protein-studio" | "jobs" | "settings" | "admin";
 
 interface SidebarProps {
   currentView: NavView;
@@ -32,21 +32,35 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const navItems: Array<{ id: NavView; label: string; icon: React.ReactNode; badge?: string; badgeColor?: string }> = [
     {
       id: "overview",
-      label: "Overview",
+      label: "Overview Dashboard",
       icon: <LayoutDashboard className="w-4 h-4" />,
     },
     {
+      id: "ecg-studio",
+      label: "ECG Live Studio",
+      icon: <Activity className="w-4 h-4 text-teal-400" />,
+      badge: "Real-Time",
+      badgeColor: "bg-teal-500/20 text-teal-300 border border-teal-500/40",
+    },
+    {
       id: "ecg",
-      label: "ECG Analysis",
+      label: "ECG Batch Analytics",
       icon: <Activity className="w-4 h-4" />,
-      badge: "Health Care",
+      badge: "DSP",
       badgeColor: "bg-teal-500/10 text-teal-400 border border-teal-500/20",
     },
     {
+      id: "protein-studio",
+      label: "Protein 3D Studio",
+      icon: <Dna className="w-4 h-4 text-violet-400" />,
+      badge: "3D Mol*",
+      badgeColor: "bg-violet-500/20 text-violet-300 border border-violet-500/40",
+    },
+    {
       id: "protein",
-      label: "Protein Prediction",
+      label: "Protein Pipeline",
       icon: <Dna className="w-4 h-4" />,
-      badge: "Biology",
+      badge: "ESMFold",
       badgeColor: "bg-violet-500/10 text-violet-400 border border-violet-500/20",
     },
     {
