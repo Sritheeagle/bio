@@ -17,6 +17,7 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
+import { api } from "../../lib/api";
 
 interface Message {
   id: string;
@@ -71,7 +72,7 @@ export const BioCopilotModal: React.FC<{
     }
   };
 
-  const handleSend = (userQuestion?: string) => {
+  const handleSend = async (userQuestion?: string) => {
     const q = (userQuestion || input).trim();
     if (!q) return;
 
@@ -86,8 +87,27 @@ export const BioCopilotModal: React.FC<{
     if (!userQuestion) setInput("");
     setIsTyping(true);
 
-    // Intelligent context-aware clinical response simulation
-    setTimeout(() => {
+    try {
+      // First attempt: Call live FastAPI Copilot endpoint
+      const result = await api.queryCopilot(q);
+      let fullText = result.response;
+      if (result.citations && result.citations.length > 0) {
+        fullText += `\n\n**Scientific References:**\n- ` + result.citations.join("\n- ");
+      }
+
+      const copilotMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        sender: "copilot",
+        text: fullText,
+        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        category: (result.category as any) || "general",
+      };
+
+      setMessages((prev) => [...prev, copilotMsg]);
+      setIsTyping(false);
+      speakText(fullText);
+    } catch {
+      // Graceful offline fallback
       let reply = "";
       let cat: "ecg" | "protein" | "compliance" | "general" = "general";
 
@@ -126,7 +146,7 @@ export const BioCopilotModal: React.FC<{
       setMessages((prev) => [...prev, copilotMsg]);
       setIsTyping(false);
       speakText(reply);
-    }, 600);
+    }
   };
 
   const copyToClipboard = (id: string, text: string) => {

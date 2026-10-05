@@ -29,6 +29,7 @@ from backend.app.api.v1.protein import router as protein_router
 from backend.app.api.v1.admin import router as admin_router
 from backend.app.api.v1.storage import router as storage_router
 from backend.app.api.v1.health import router as health_router
+from backend.app.api.v1.copilot import router as copilot_router
 
 logger = logging.getLogger(__name__)
 worker_tasks = []
@@ -93,6 +94,7 @@ app.include_router(ecg_router, prefix=API_V1_STR)
 app.include_router(protein_router, prefix=API_V1_STR)
 app.include_router(admin_router, prefix=API_V1_STR)
 app.include_router(storage_router, prefix=API_V1_STR)
+app.include_router(copilot_router, prefix=API_V1_STR)
 
 # Also expose health at /api/health for convenient probe checks
 app.include_router(health_router, prefix="/api")
