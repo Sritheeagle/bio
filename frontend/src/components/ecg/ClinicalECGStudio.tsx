@@ -16,6 +16,7 @@ import {
   AlertTriangle,
   Heart,
 } from "lucide-react";
+import { PoincarePlotCanvas } from "./PoincarePlotCanvas";
 
 interface LeadData {
   id: string;
@@ -393,30 +394,46 @@ export const ClinicalECGStudio: React.FC = () => {
         </div>
       </div>
 
-      {/* Live HRV Biometric Metrics Panel */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-        <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-          <div className="text-[10px] font-bold text-slate-400 uppercase">SDNN Metric</div>
-          <div className="text-lg font-bold text-emerald-400 mt-0.5">68.4 ms</div>
-          <div className="text-[10px] text-slate-500 mt-0.5">Normal autonomic tone</div>
+      {/* Nonlinear Poincaré Plot Phase-Space Graphic */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        <div className="lg:col-span-1">
+          <PoincarePlotCanvas bpm={bpm} noiseLevel={noiseLevel} />
         </div>
 
-        <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-          <div className="text-[10px] font-bold text-slate-400 uppercase">RMSSD (Vagal)</div>
-          <div className="text-lg font-bold text-teal-400 mt-0.5">42.1 ms</div>
-          <div className="text-[10px] text-slate-500 mt-0.5">Parasympathetic index</div>
-        </div>
+        {/* Live HRV Biometric Metrics Panel */}
+        <div className="lg:col-span-2 space-y-3">
+          <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+            <Activity className="w-3.5 h-3.5 text-teal-400" /> Autonomic Heart Rate Variability Indices
+          </h4>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+              <div className="text-[10px] font-bold text-slate-400 uppercase">SDNN Metric</div>
+              <div className="text-lg font-bold text-emerald-400 mt-0.5">68.4 ms</div>
+              <div className="text-[10px] text-slate-500 mt-0.5">Normal autonomic tone</div>
+            </div>
 
-        <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-          <div className="text-[10px] font-bold text-slate-400 uppercase">pNN50 Ratio</div>
-          <div className="text-lg font-bold text-cyan-400 mt-0.5">18.7 %</div>
-          <div className="text-[10px] text-slate-500 mt-0.5">&gt; 50ms successive intervals</div>
-        </div>
+            <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+              <div className="text-[10px] font-bold text-slate-400 uppercase">RMSSD (Vagal)</div>
+              <div className="text-lg font-bold text-teal-400 mt-0.5">42.1 ms</div>
+              <div className="text-[10px] text-slate-500 mt-0.5">Parasympathetic index</div>
+            </div>
 
-        <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-          <div className="text-[10px] font-bold text-slate-400 uppercase">LF / HF Ratio</div>
-          <div className="text-lg font-bold text-amber-400 mt-0.5">1.45</div>
-          <div className="text-[10px] text-slate-500 mt-0.5">Sympathovagal balance</div>
+            <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+              <div className="text-[10px] font-bold text-slate-400 uppercase">pNN50 Ratio</div>
+              <div className="text-lg font-bold text-cyan-400 mt-0.5">18.7 %</div>
+              <div className="text-[10px] text-slate-500 mt-0.5">&gt; 50ms successive intervals</div>
+            </div>
+
+            <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+              <div className="text-[10px] font-bold text-slate-400 uppercase">LF / HF Ratio</div>
+              <div className="text-lg font-bold text-amber-400 mt-0.5">1.45</div>
+              <div className="text-[10px] text-slate-500 mt-0.5">Sympathovagal balance</div>
+            </div>
+          </div>
+
+          <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-400 leading-relaxed">
+            <span className="text-teal-400 font-bold">Clinical Annotation:</span> SD1 represents the standard deviation of instantaneous beat-to-beat variability (vagal parasympathetic control), while SD2 represents continuous autonomic modulation. A classic comet-shaped ellipse indicates healthy sinus autonomic variability.
+          </div>
         </div>
       </div>
     </div>

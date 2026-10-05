@@ -12,6 +12,7 @@ import {
   Layers,
   Sparkles,
 } from "lucide-react";
+import { NavView } from "../layout/Sidebar";
 import { CloudTelemetrySection } from "./CloudTelemetrySection";
 
 interface OverviewDashboardProps {
@@ -19,7 +20,7 @@ interface OverviewDashboardProps {
   projects: Project[];
   activeProject: Project | null;
   health: HealthInfo | null;
-  onNavigate: (view: "ecg" | "protein" | "jobs") => void;
+  onNavigate: (view: NavView) => void;
   onSelectJob: (job: Job) => void;
 }
 
@@ -115,10 +116,123 @@ export const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
       {/* Cloud & Cluster Telemetry with Live Metrics & Audit Export */}
       <CloudTelemetrySection health={health} />
 
+      {/* Live Interactive Studios Showcase */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-teal-600" />
+              Live Interactive Studios
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              High-frame-rate visual computing with dynamic biosignal synthesis, Poincaré maps, and 3D molecular structures.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Studio 1: ECG Live Studio */}
+          <div className="relative overflow-hidden rounded-3xl p-6 bg-gradient-to-br from-slate-950 via-slate-900 to-teal-950 text-white border border-teal-500/30 shadow-xl flex flex-col justify-between group hover:border-teal-400/60 transition-all">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/40">
+                  REAL-TIME 500 Hz DSP
+                </span>
+                <div className="w-10 h-10 rounded-2xl bg-teal-500/20 text-teal-300 flex items-center justify-center font-bold">
+                  <Activity className="w-5 h-5 text-teal-400 group-hover:scale-110 transition-transform" />
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-bold text-white group-hover:text-teal-300 transition-colors">
+                  Clinical ECG Live Studio
+                </h3>
+                <p className="text-xs text-slate-300 mt-1.5 leading-relaxed">
+                  Experience multi-lead cardiac sweeps (Leads I, II, III, V1, V5), Web Audio cardiac blip synthesis, 0.5–45 Hz Butterworth zero-phase filtering, and live nonlinear Poincaré (RR[n] vs RR[n+1]) phase-space mapping.
+                </p>
+              </div>
+
+              {/* Graphic badges */}
+              <div className="flex flex-wrap gap-2 pt-1 text-[11px]">
+                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 text-teal-300 border border-teal-500/20 font-mono">
+                  Poincaré SD1/SD2
+                </span>
+                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 text-teal-300 border border-teal-500/20 font-mono">
+                  Multi-Lead Oscilloscope
+                </span>
+                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 text-teal-300 border border-teal-500/20 font-mono">
+                  Audio Cardiac Synth
+                </span>
+              </div>
+            </div>
+
+            <div className="pt-6 border-t border-slate-800/80 mt-6 flex items-center justify-between">
+              <div className="text-[11px] text-teal-400 font-medium">
+                Live Browser DSP Engine
+              </div>
+              <button
+                onClick={() => onNavigate("ecg-studio")}
+                className="px-4 py-2 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-slate-950 font-bold rounded-xl text-xs shadow-lg flex items-center gap-1.5 transition-all hover:scale-102 active:scale-98 cursor-pointer"
+              >
+                Open ECG Studio <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Studio 2: Protein 3D Studio */}
+          <div className="relative overflow-hidden rounded-3xl p-6 bg-gradient-to-br from-slate-950 via-slate-900 to-violet-950 text-white border border-violet-500/30 shadow-xl flex flex-col justify-between group hover:border-violet-400/60 transition-all">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/40">
+                  INTERACTIVE 3D MOL*
+                </span>
+                <div className="w-10 h-10 rounded-2xl bg-violet-500/20 text-violet-300 flex items-center justify-center font-bold">
+                  <Dna className="w-5 h-5 text-violet-400 group-hover:scale-110 transition-transform" />
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-bold text-white group-hover:text-violet-300 transition-colors">
+                  Protein 3D Structure Studio
+                </h3>
+                <p className="text-xs text-slate-300 mt-1.5 leading-relaxed">
+                  Interact with real-time molecular graphics in Ribbon, Spheres, and Backbone modes, examine per-residue pLDDT confidence color gradients, explore Ramachandran $\Phi$/$\Psi$ dihedral angles, and export PDB structures.
+                </p>
+              </div>
+
+              {/* Graphic badges */}
+              <div className="flex flex-wrap gap-2 pt-1 text-[11px]">
+                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 text-violet-300 border border-violet-500/20 font-mono">
+                  Ramachandran Contours
+                </span>
+                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 text-violet-300 border border-violet-500/20 font-mono">
+                  pLDDT Heatmap
+                </span>
+                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 text-violet-300 border border-violet-500/20 font-mono">
+                  Atomic 3D Projection
+                </span>
+              </div>
+            </div>
+
+            <div className="pt-6 border-t border-slate-800/80 mt-6 flex items-center justify-between">
+              <div className="text-[11px] text-violet-400 font-medium">
+                Mol* Engine + ESMFold
+              </div>
+              <button
+                onClick={() => onNavigate("protein-studio")}
+                className="px-4 py-2 bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-400 hover:to-purple-400 text-white font-bold rounded-xl text-xs shadow-lg flex items-center gap-1.5 transition-all hover:scale-102 active:scale-98 cursor-pointer"
+              >
+                Open 3D Studio <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Two Main Workflows Launch Cards */}
       <div className="space-y-3">
         <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
-          Primary Computational Sections
+          Batch Computing & Pipelines
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Card A: ECG */}

@@ -27,6 +27,32 @@ export default function WorkbenchPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [health, setHealth] = useState<HealthInfo | null>(null);
 
+  // Collapsible Sidebar state
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("biocloud_sidebar_collapsed");
+      if (saved !== null) {
+        setIsSidebarCollapsed(saved === "true");
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const handleToggleSidebar = () => {
+    setIsSidebarCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("biocloud_sidebar_collapsed", String(next));
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  };
+
   // Modals
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
@@ -120,6 +146,8 @@ export default function WorkbenchPage() {
         onNavigate={(view) => setCurrentView(view)}
         currentUser={currentUser}
         activeProject={activeProject}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={handleToggleSidebar}
       />
 
       {/* Main Content Area */}
@@ -135,6 +163,8 @@ export default function WorkbenchPage() {
           onOpenCopilot={() => setIsCopilotOpen(true)}
           storageType={health?.storage.type || "local"}
           health={health}
+          isSidebarCollapsed={isSidebarCollapsed}
+          onToggleSidebar={handleToggleSidebar}
         />
 
         <main className="flex-1 overflow-y-auto p-6 md:p-8">

@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { User, Project, HealthInfo } from "../../types";
-import { Folder, ChevronDown, Plus, Shield, User as UserIcon, LogOut, Database, AlertCircle, Cloud, AlertTriangle, Layers } from "lucide-react";
+import { Folder, ChevronDown, Plus, Shield, User as UserIcon, LogOut, Database, AlertCircle, Cloud, AlertTriangle, Layers, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
 interface HeaderProps {
   currentUser: User | null;
@@ -15,6 +15,8 @@ interface HeaderProps {
   onOpenCopilot?: () => void;
   storageType?: string;
   health?: HealthInfo | null;
+  isSidebarCollapsed?: boolean;
+  onToggleSidebar?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -28,6 +30,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenCopilot,
   storageType = "local",
   health,
+  isSidebarCollapsed = false,
+  onToggleSidebar,
 }) => {
   const [projectDropdownOpen, setProjectDropdownOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
@@ -49,8 +53,23 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       <div className="px-6 h-16 flex items-center justify-between">
-        {/* Left: Active Project Selector */}
-        <div className="flex items-center gap-4">
+        {/* Left: Sidebar Toggle & Active Project Selector */}
+        <div className="flex items-center gap-3">
+          {onToggleSidebar && (
+            <button
+              onClick={onToggleSidebar}
+              className="p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-slate-200/60 hover:border-slate-300 transition-all flex items-center justify-center cursor-pointer shadow-2xs group"
+              title={isSidebarCollapsed ? "Open sidebar (Expand navigation)" : "Close sidebar (Collapse navigation)"}
+              aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              {isSidebarCollapsed ? (
+                <PanelLeftOpen className="w-4 h-4 text-teal-600 transition-transform group-hover:scale-110" />
+              ) : (
+                <PanelLeftClose className="w-4 h-4 text-slate-600 transition-transform group-hover:scale-110" />
+              )}
+            </button>
+          )}
+
           <div className="relative">
             <button
               onClick={() => setProjectDropdownOpen(!projectDropdownOpen)}
