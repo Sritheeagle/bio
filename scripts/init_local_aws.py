@@ -62,20 +62,24 @@ def check_db_connectivity(db_url: str) -> bool:
         return False
 
 
-def setup_local_aws(endpoint_url: str = DEFAULT_ENDPOINT, region: str = DEFAULT_REGION, db_url: str = None):
+def setup_local_aws(endpoint_url: str = DEFAULT_ENDPOINT, region: str = DEFAULT_REGION, db_url: str = None, use_sqlite: bool = False):
     print(f"\n=======================================================")
     print(f"  BioCloud Workbench - Local AWS Cloud Initializer")
     print(f"=======================================================")
     print(f"[*] Target Endpoint: {endpoint_url}")
     print(f"[*] Target Region:   {region}")
 
-    target_db_url = db_url or os.getenv("DATABASE_URL") or "postgresql://biocloud:biocloud_dev_password@localhost:5432/biocloud_db"
-    if target_db_url.startswith("sqlite"):
-        target_db_url = "postgresql://biocloud:biocloud_dev_password@localhost:5432/biocloud_db"
+    if use_sqlite:
+        target_db_url = "sqlite:///data/biocloud.db"
+        db_host_port = "SQLite (data/biocloud.db)"
+    else:
+        target_db_url = db_url or os.getenv("DATABASE_URL") or "postgresql://biocloud:biocloud_dev_password@localhost:5432/biocloud_db"
+        if target_db_url.startswith("sqlite"):
+            target_db_url = "postgresql://biocloud:biocloud_dev_password@localhost:5432/biocloud_db"
+        from urllib.parse import urlparse
+        db_parsed = urlparse(target_db_url)
+        db_host_port = f"{db_parsed.hostname or 'localhost'}:{db_parsed.port or 5432}"
 
-    from urllib.parse import urlparse
-    db_parsed = urlparse(target_db_url)
-    db_host_port = f"{db_parsed.hostname or 'localhost'}:{db_parsed.port or 5432}"
     print(f"[*] Database Target: {db_host_port}")
 
     if not check_endpoint(endpoint_url):
@@ -319,10 +323,11 @@ if __name__ == "__main__":
     parser.add_argument("--endpoint", default=DEFAULT_ENDPOINT, help="AWS endpoint URL")
     parser.add_argument("--region", default=DEFAULT_REGION, help="AWS Region")
     parser.add_argument("--db-url", default=None, help="Database URL for cloud mode (e.g. postgresql://user:pass@host:5432/dbname)")
+    parser.add_argument("--sqlite", action="store_true", help="Keep SQLite database while enabling AWS S3/SQS/KMS emulator")
     parser.add_argument("--local", action="store_true", help="Reset to local dev mode")
     args = parser.parse_args()
 
     if args.local:
         reset_to_local()
     else:
-        setup_local_aws(args.endpoint, args.region, args.db_url)
+        setup_local_aws(args.endpoint, args.region, args.db_url, args.sqlite)
