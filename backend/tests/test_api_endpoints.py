@@ -145,3 +145,25 @@ def test_admin_access_restriction():
     resp_admin = client.get("/api/v1/admin/users", headers=admin_headers)
     assert resp_admin.status_code == 200
     assert len(resp_admin.json()) >= 2
+
+
+def test_copilot_query_endpoint():
+    # 1. Test DSP Query
+    ecg_req = {"query": "Explain Butterworth zero-phase filter for ECG"}
+    resp_ecg = client.post("/api/v1/copilot/query", json=ecg_req)
+    assert resp_ecg.status_code == 200
+    ecg_data = resp_ecg.json()
+    assert ecg_data["category"] == "cardiovascular_dsp"
+    assert "Butterworth" in ecg_data["response"]
+    assert len(ecg_data["citations"]) > 0
+    assert "RUO" in ecg_data["ruo_disclaimer"]
+
+    # 2. Test Protein Query
+    protein_req = {"query": "How is pLDDT confidence measured in ESMFold structures?"}
+    resp_protein = client.post("/api/v1/copilot/query", json=protein_req)
+    assert resp_protein.status_code == 200
+    protein_data = resp_protein.json()
+    assert protein_data["category"] == "structural_biology"
+    assert "pLDDT" in protein_data["response"]
+    assert len(protein_data["citations"]) > 0
+
