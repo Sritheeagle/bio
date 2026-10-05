@@ -94,10 +94,96 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
             </div>
           )}
 
+          {/* ECG Structured Metrics Cards */}
+          {job.workflow_type === "ecg" && job.result?.metrics && (
+            <div className="space-y-2">
+              <div className="font-bold text-slate-700 flex items-center justify-between">
+                <span>Extracted Biomarkers & HRV Metrics</span>
+                <span className="text-[10px] text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full border border-teal-200">
+                  Pan-Tompkins QRS DSP
+                </span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                <div className="p-3 bg-teal-50/50 rounded-xl border border-teal-200/60">
+                  <span className="text-[10px] text-slate-500 uppercase font-semibold block">Heart Rate</span>
+                  <span className="text-base font-bold text-teal-900 font-mono">
+                    {Math.round(job.result.metrics.mean_hr_bpm || job.result.metrics.heart_rate || 0)} <span className="text-xs font-normal">BPM</span>
+                  </span>
+                </div>
+                <div className="p-3 bg-teal-50/50 rounded-xl border border-teal-200/60">
+                  <span className="text-[10px] text-slate-500 uppercase font-semibold block">SDNN (Autonomic)</span>
+                  <span className="text-base font-bold text-teal-900 font-mono">
+                    {(job.result.metrics.sdnn_ms || 0).toFixed(1)} <span className="text-xs font-normal">ms</span>
+                  </span>
+                </div>
+                <div className="p-3 bg-teal-50/50 rounded-xl border border-teal-200/60">
+                  <span className="text-[10px] text-slate-500 uppercase font-semibold block">RMSSD (Vagal)</span>
+                  <span className="text-base font-bold text-teal-900 font-mono">
+                    {(job.result.metrics.rmssd_ms || 0).toFixed(1)} <span className="text-xs font-normal">ms</span>
+                  </span>
+                </div>
+                <div className="p-3 bg-teal-50/50 rounded-xl border border-teal-200/60">
+                  <span className="text-[10px] text-slate-500 uppercase font-semibold block">pNN50</span>
+                  <span className="text-base font-bold text-teal-900 font-mono">
+                    {(job.result.metrics.pnn50_pct || 0).toFixed(1)}%
+                  </span>
+                </div>
+                <div className="p-3 bg-teal-50/50 rounded-xl border border-teal-200/60">
+                  <span className="text-[10px] text-slate-500 uppercase font-semibold block">R-Peaks Detected</span>
+                  <span className="text-base font-bold text-teal-900 font-mono">
+                    {job.result.metrics.r_peaks_count || job.result.metrics.num_beats || 0}
+                  </span>
+                </div>
+                <div className="p-3 bg-teal-50/50 rounded-xl border border-teal-200/60">
+                  <span className="text-[10px] text-slate-500 uppercase font-semibold block">Duration</span>
+                  <span className="text-base font-bold text-teal-900 font-mono">
+                    {(job.result.metrics.signal_length_seconds || 0).toFixed(1)} <span className="text-xs font-normal">sec</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Protein Structured Fold Cards */}
+          {job.workflow_type === "protein" && job.result && (
+            <div className="space-y-2">
+              <div className="font-bold text-slate-700 flex items-center justify-between">
+                <span>Predicted Atomic Conformation</span>
+                <span className="text-[10px] text-violet-600 bg-violet-50 px-2 py-0.5 rounded-full border border-violet-200">
+                  Meta ESMFold v1.0
+                </span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                <div className="p-3 bg-violet-50/50 rounded-xl border border-violet-200/60">
+                  <span className="text-[10px] text-slate-500 uppercase font-semibold block">Mean pLDDT Score</span>
+                  <span className="text-base font-bold text-violet-900 font-mono">
+                    {(job.result.mean_plddt || 0).toFixed(1)} <span className="text-xs font-normal">/ 100</span>
+                  </span>
+                </div>
+                <div className="p-3 bg-violet-50/50 rounded-xl border border-violet-200/60">
+                  <span className="text-[10px] text-slate-500 uppercase font-semibold block">Confidence Level</span>
+                  <span className="text-sm font-bold text-violet-900">
+                    {(job.result.mean_plddt || 0) >= 90
+                      ? "Very High Confidence"
+                      : (job.result.mean_plddt || 0) >= 70
+                      ? "Confident Backbone"
+                      : "Low / Flexible"}
+                  </span>
+                </div>
+                <div className="p-3 bg-violet-50/50 rounded-xl border border-violet-200/60">
+                  <span className="text-[10px] text-slate-500 uppercase font-semibold block">Residue Count</span>
+                  <span className="text-base font-bold text-violet-900 font-mono">
+                    {job.result.residue_count || job.parameters?.sequence?.length || 0} <span className="text-xs font-normal">AA</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Result JSON Summary */}
           {job.result && (
             <div>
-              <div className="font-bold text-slate-700 mb-1">Workflow Results Summary</div>
+              <div className="font-bold text-slate-700 mb-1">Raw Result Payload (Audit)</div>
               <pre className="p-3 bg-slate-900 text-teal-300 rounded-xl font-mono text-[11px] max-h-48 overflow-y-auto">
                 {JSON.stringify(
                   Object.fromEntries(
