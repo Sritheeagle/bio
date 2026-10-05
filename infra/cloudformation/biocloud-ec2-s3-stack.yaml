@@ -182,27 +182,33 @@ Resources:
           chmod +x $DOCKER_CONFIG/cli-plugins/docker-compose
           ln -s $DOCKER_CONFIG/cli-plugins/docker-compose /usr/bin/docker-compose
 
-          echo "=== [4/5] Setting up BioCloud Workbench environment ==="
+          echo "=== [4/6] Cloning BioCloud Workbench from GitHub ==="
           APP_DIR=/opt/biocloud-workbench
-          mkdir -p $APP_DIR/data/storage
+          mkdir -p $APP_DIR
+          git clone https://github.com/Sritheeagle/bio.git $APP_DIR
           cd $APP_DIR
 
-          cat << 'EOF' > .env
-          LOCAL_DEV_MODE=true
+          echo "=== [5/6] Creating production environment configuration ==="
+          cat << EOF > .env
+          LOCAL_DEV_MODE=false
           ENVIRONMENT=production
           LOG_LEVEL=INFO
-          DATABASE_URL=sqlite:///data/biocloud.db
+          DATABASE_URL=postgresql://biocloud:biocloud_dev_password@postgres:5432/biocloud_db
           STORAGE_TYPE=s3
           AWS_REGION=${AWS::Region}
           AWS_S3_BUCKET=${BucketName}
           SECRET_KEY=biocloud-production-secret-key-2026-secure
           BATCH_PROTEIN_ENABLED=false
           ESMFOLD_MODEL_ENABLED=false
+          PROTEIN_MODEL_NAME=esmfold_v1
           NEXT_PUBLIC_API_URL=http://localhost:8000
+          BACKEND_INTERNAL_URL=http://backend:8000
           EOF
 
-          echo "=== [5/5] BioCloud Stack Bootstrapped Successfully ==="
-          echo "Ready for Docker container execution."
+          echo "=== [6/6] Launching BioCloud Workbench via Docker Compose ==="
+          docker compose up -d --build
+
+          echo "=== BioCloud Workbench Stack Started Successfully ==="
 
 Outputs:
   EC2PublicIP:
