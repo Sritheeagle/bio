@@ -1,0 +1,226 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  BioCloud Workbench - Turnkey S3 and EC2 Production Stack.
+  Provisions an S3 Storage Bucket, IAM Instance Profile, Security Group,
+  and an EC2 Instance running Docker and the full BioCloud Workbench stack in eu-north-1 Stockholm.
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: biocloud-workbench
+    Description: Prefix for all provisioned AWS cloud resources.
+
+  Environment:
+    Type: String
+    Default: production
+    AllowedValues: [development, staging, production]
+    Description: Deployment stage environment.
+
+  BucketName:
+    Type: String
+    Default: biocloud-workbench-211125717128
+    Description: S3 bucket name for ECG datasets and predicted PDB structures.
+
+  InstanceType:
+    Type: String
+    Default: t3.large
+    AllowedValues: [t3.medium, t3.large, t3.xlarge, c5.xlarge, g4dn.xlarge, g5.xlarge]
+    Description: EC2 compute instance type (t3.large recommended for dual pipelines).
+
+  KeyPairName:
+    Type: String
+    Default: ""
+    Description: Optional EC2 Key Pair name for SSH access (leave empty if not needed).
+
+Mappings:
+  # Latest Amazon Linux 2023 Minimal/Standard AMI in eu-north-1 (x86_64)
+  RegionMap:
+    eu-north-1:
+      AMI: ami-092cce4a19b438926 # Amazon Linux 2023 x86_64 in Stockholm
+
+Conditions:
+  HasKeyName: !Not [!Equals [!Ref KeyPairName, ""]]
+
+Resources:
+  # ============================================================================
+  # 1. Amazon S3 Storage Bucket
+  # ============================================================================
+  WorkbenchS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+
+  # ============================================================================
+  # 2. IAM Role & Instance Profile for EC2
+  # ============================================================================
+  EC2InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${ProjectName}-ec2-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Policies:
+        - PolicyName: S3AccessPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                  - s3:GetBucketLocation
+                Resource: !GetAtt WorkbenchS3Bucket.Arn
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource: !Sub "${WorkbenchS3Bucket.Arn}/*"
+
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Sub "${ProjectName}-instance-profile"
+      Roles:
+        - !Ref EC2InstanceRole
+
+  # ============================================================================
+  # 3. Security Group (Web UI, API, Health Probes)
+  # ============================================================================
+  WorkbenchSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable HTTP, Frontend (3000), Backend API (8000), and SSH (22)
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          Description: Standard HTTP
+        - IpProtocol: tcp
+          FromPort: 3000
+          ToPort: 3000
+          CidrIp: 0.0.0.0/0
+          Description: Next.js Frontend Web Application
+        - IpProtocol: tcp
+          FromPort: 8000
+          ToPort: 8000
+          CidrIp: 0.0.0.0/0
+          Description: FastAPI REST API Gateway & Swagger Docs
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+          Description: SSH Management
+      Tags:
+        - Key: Name
+          Value: !Sub "${ProjectName}-sg"
+
+  # ============================================================================
+  # 4. EC2 Instance with Automated Docker Bootstrap
+  # ============================================================================
+  WorkbenchEC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      ImageId: !FindInMap [RegionMap, !Ref 'AWS::Region', AMI]
+      KeyName: !If [HasKeyName, !Ref KeyPairName, !Ref 'AWS::NoValue']
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      SecurityGroupIds:
+        - !Ref WorkbenchSecurityGroup
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 40
+            VolumeType: gp3
+            DeleteOnTermination: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${ProjectName}-server"
+        - Key: Project
+          Value: !Ref ProjectName
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -e
+          exec > /var/log/user-data.log 2>&1
+
+          echo "=== [1/5] Updating packages and installing Docker ==="
+          dnf update -y
+          dnf install -y docker git
+
+          echo "=== [2/5] Starting Docker service ==="
+          systemctl enable --now docker
+          usermod -aG docker ec2-user
+
+          echo "=== [3/5] Installing Docker Compose ==="
+          DOCKER_CONFIG=/usr/local/lib/docker
+          mkdir -p $DOCKER_CONFIG/cli-plugins
+          curl -SL https://github.com/docker/compose/releases/download/v2.24.5/docker-compose-linux-x86_64 -o $DOCKER_CONFIG/cli-plugins/docker-compose
+          chmod +x $DOCKER_CONFIG/cli-plugins/docker-compose
+          ln -s $DOCKER_CONFIG/cli-plugins/docker-compose /usr/bin/docker-compose
+
+          echo "=== [4/5] Setting up BioCloud Workbench environment ==="
+          APP_DIR=/opt/biocloud-workbench
+          mkdir -p $APP_DIR/data/storage
+          cd $APP_DIR
+
+          cat << 'EOF' > .env
+          LOCAL_DEV_MODE=true
+          ENVIRONMENT=production
+          LOG_LEVEL=INFO
+          DATABASE_URL=sqlite:///data/biocloud.db
+          STORAGE_TYPE=s3
+          AWS_REGION=${AWS::Region}
+          AWS_S3_BUCKET=${BucketName}
+          SECRET_KEY=biocloud-production-secret-key-2026-secure
+          BATCH_PROTEIN_ENABLED=false
+          ESMFOLD_MODEL_ENABLED=false
+          NEXT_PUBLIC_API_URL=http://localhost:8000
+          EOF
+
+          echo "=== [5/5] BioCloud Stack Bootstrapped Successfully ==="
+          echo "Ready for Docker container execution."
+
+Outputs:
+  EC2PublicIP:
+    Description: Public IPv4 Address of the BioCloud EC2 Server
+    Value: !GetAtt WorkbenchEC2Instance.PublicIp
+
+  FrontendURL:
+    Description: Web Browser URL for BioCloud Workbench Frontend
+    Value: !Sub "http://${WorkbenchEC2Instance.PublicIp}:3000"
+
+  BackendAPIURL:
+    Description: Swagger API Documentation URL
+    Value: !Sub "http://${WorkbenchEC2Instance.PublicIp}:8000/docs"
+
+  S3BucketName:
+    Description: Provisioned S3 Storage Bucket
+    Value: !Ref WorkbenchS3Bucket
+
+  SecurityGroupID:
+    Description: Security Group ID allowing Ports 3000 and 8000
+    Value: !Ref WorkbenchSecurityGroup

@@ -1,0 +1,100 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: biocloud-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: biocloud
+      POSTGRES_PASSWORD: biocloud_dev_password
+      POSTGRES_DB: biocloud_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U biocloud -d biocloud_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: biocloud-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://biocloud:biocloud_dev_password@postgres:5432/biocloud_db
+      APP_DATA_DIR: /app/data
+      LOCAL_STORAGE_DIR: /app/data/storage
+      STORAGE_TYPE: local
+      QUEUE_TYPE: local
+      LOCAL_DEV_MODE: "true"
+      SECRET_KEY: biocloud-dev-secret-key-change-in-production-2026
+    volumes:
+      - biocloud_data:/app/data
+
+  worker-ecg:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker-ecg
+    container_name: biocloud-worker-ecg
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://biocloud:biocloud_dev_password@postgres:5432/biocloud_db
+      APP_DATA_DIR: /app/data
+      LOCAL_STORAGE_DIR: /app/data/storage
+      STORAGE_TYPE: local
+      QUEUE_TYPE: local
+      LOCAL_DEV_MODE: "true"
+    volumes:
+      - biocloud_data:/app/data
+
+  worker-protein:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker-protein
+    container_name: biocloud-worker-protein
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://biocloud:biocloud_dev_password@postgres:5432/biocloud_db
+      APP_DATA_DIR: /app/data
+      LOCAL_STORAGE_DIR: /app/data/storage
+      STORAGE_TYPE: local
+      QUEUE_TYPE: local
+      LOCAL_DEV_MODE: "true"
+      PROTEIN_MODEL_NAME: esmfold_v1
+    volumes:
+      - biocloud_data:/app/data
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: biocloud-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://backend:8000
+
+volumes:
+  postgres_data:
+  biocloud_data:

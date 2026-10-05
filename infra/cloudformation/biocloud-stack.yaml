@@ -1,0 +1,221 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  BioCloud Workbench - Enterprise Cloud-Native ECG Signal Processing &
+  Protein Structure Prediction Stack (eu-north-1 Stockholm).
+  Provisions S3 Storage, SQS FIFO Queues, Cognito User Pool, VPC, and ECS Fargate.
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: biocloud-workbench
+    Description: Prefix for all provisioned AWS cloud resources.
+
+  Environment:
+    Type: String
+    Default: production
+    AllowedValues: [development, staging, production]
+    Description: Deployment stage environment.
+
+  BucketName:
+    Type: String
+    Default: biocloud-workbench-211125717128
+    Description: Globally unique S3 bucket name for ECG datasets and predicted PDB structures.
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Project Settings"
+        Parameters:
+          - ProjectName
+          - Environment
+          - BucketName
+
+Resources:
+  # ============================================================================
+  # 1. Amazon S3 Secure Storage Bucket
+  # ============================================================================
+  WorkbenchS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+
+  # ============================================================================
+  # 2. Amazon SQS FIFO Queues (Decoupled ECG & Protein Pipelines)
+  # ============================================================================
+  ECGQueueDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "${ProjectName}-ecg-dlq.fifo"
+      FifoQueue: true
+      MessageRetentionPeriod: 1209600 # 14 days
+
+  ECGQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "${ProjectName}-ecg-queue.fifo"
+      FifoQueue: true
+      ContentBasedDeduplication: true
+      VisibilityTimeout: 300
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt ECGQueueDLQ.Arn
+        maxReceiveCount: 3
+
+  ProteinQueueDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "${ProjectName}-protein-dlq.fifo"
+      FifoQueue: true
+      MessageRetentionPeriod: 1209600
+
+  ProteinQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "${ProjectName}-protein-queue.fifo"
+      FifoQueue: true
+      ContentBasedDeduplication: true
+      VisibilityTimeout: 900
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt ProteinQueueDLQ.Arn
+        maxReceiveCount: 3
+
+  # ============================================================================
+  # 3. Amazon Cognito User Pool & Groups
+  # ============================================================================
+  CognitoUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub "${ProjectName}-user-pool"
+      UsernameAttributes:
+        - email
+      AutoVerifiedAttributes:
+        - email
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireUppercase: true
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+
+  CognitoUserPoolGroupResearchers:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: Researchers
+      UserPoolId: !Ref CognitoUserPool
+      Description: Research scientists with ECG upload and protein prediction permissions.
+
+  CognitoUserPoolGroupAdmins:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: Administrators
+      UserPoolId: !Ref CognitoUserPool
+      Description: System administrators managing model versions and audit trails.
+
+  CognitoAppClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: !Sub "${ProjectName}-web-client"
+      UserPoolId: !Ref CognitoUserPool
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_PASSWORD_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+        - ALLOW_USER_SRP_AUTH
+
+  # ============================================================================
+  # 4. Amazon ECR Container Repositories
+  # ============================================================================
+  ECRBackend:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${ProjectName}-backend"
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      ImageTagMutability: MUTABLE
+
+  ECRFrontend:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${ProjectName}-frontend"
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      ImageTagMutability: MUTABLE
+
+  ECRWorkerECG:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${ProjectName}-worker-ecg"
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      ImageTagMutability: MUTABLE
+
+  ECRWorkerProtein:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${ProjectName}-worker-protein"
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      ImageTagMutability: MUTABLE
+
+  # ============================================================================
+  # 5. ECS Fargate Cluster
+  # ============================================================================
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Sub "${ProjectName}-cluster"
+      CapacityProviders:
+        - FARGATE
+        - FARGATE_SPOT
+
+Outputs:
+  S3BucketName:
+    Description: S3 Storage Bucket for BioCloud datasets
+    Value: !Ref WorkbenchS3Bucket
+    Export:
+      Name: !Sub "${AWS::StackName}-S3BucketName"
+
+  S3BucketArn:
+    Description: S3 Storage Bucket ARN
+    Value: !GetAtt WorkbenchS3Bucket.Arn
+
+  SQSECGQueueUrl:
+    Description: SQS FIFO Queue URL for ECG processing jobs
+    Value: !Ref ECGQueue
+
+  SQSProteinQueueUrl:
+    Description: SQS FIFO Queue URL for Protein structure jobs
+    Value: !Ref ProteinQueue
+
+  CognitoUserPoolId:
+    Description: Cognito User Pool Identifier
+    Value: !Ref CognitoUserPool
+
+  CognitoClientId:
+    Description: Cognito Web Client Identifier
+    Value: !Ref CognitoAppClient
+
+  ECRBackendUri:
+    Description: ECR Repository URI for FastAPI Backend
+    Value: !GetAtt ECRBackend.RepositoryUri
+
+  ECRFrontendUri:
+    Description: ECR Repository URI for Next.js Frontend
+    Value: !GetAtt ECRFrontend.RepositoryUri

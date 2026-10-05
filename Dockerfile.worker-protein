@@ -1,0 +1,19 @@
+FROM python:3.12-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY backend/requirements.txt requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY backend ./backend
+
+ENV PYTHONPATH=/app
+ENV APP_DATA_DIR=/app/data
+
+# Dedicated protein structure prediction worker
+CMD ["python", "-m", "backend.app.workers.protein_worker"]
