@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Project, Job, SyntheticPattern, ECGAnalysisResult } from "../../types";
 import { api } from "../../lib/api";
 import { ECGWaveformChart } from "./ECGWaveformChart";
+import { PoincarePlotCanvas } from "./PoincarePlotCanvas";
 import {
   Activity,
   UploadCloud,
@@ -762,6 +763,14 @@ export const ECGSection: React.FC<ECGSectionProps> = ({
                       </div>
                     </div>
                   )}
+
+                  {/* Nonlinear Phase-Space Dynamics */}
+                  <div className="space-y-2">
+                    <PoincarePlotCanvas
+                      bpm={Math.round(ecgResult.mean_hr_bpm || 72)}
+                      noiseLevel={Math.min(50, Math.round((ecgResult.sdnn_ms || 40) / 2))}
+                    />
+                  </div>
 
                   {/* Provenance & Export Card */}
                   <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 text-xs text-slate-600 space-y-3">

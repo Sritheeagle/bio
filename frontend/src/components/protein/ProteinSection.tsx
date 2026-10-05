@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Project, Job, ProteinBenchmark, ProteinPredictionResult } from "../../types";
 import { api } from "../../lib/api";
 import { MolecularViewer } from "./MolecularViewer";
+import { RamachandranPlotCanvas } from "./RamachandranPlotCanvas";
 import {
   Dna,
   UploadCloud,
@@ -810,6 +811,14 @@ export const ProteinSection: React.FC<ProteinSectionProps> = ({
                         {proteinResult.model_name} ({proteinResult.model_version})
                       </div>
                     </div>
+                  </div>
+
+                  {/* Stereochemical Quality & Ramachandran Map */}
+                  <div className="space-y-2">
+                    <RamachandranPlotCanvas
+                      proteinName={proteinResult.header || "Predicted Structure"}
+                      residueCount={proteinResult.sequence_length || 50}
+                    />
                   </div>
 
                   {/* Provenance & Export Card */}
