@@ -23,9 +23,9 @@ Parameters:
 
   InstanceType:
     Type: String
-    Default: t3.large
-    AllowedValues: [t3.medium, t3.large, t3.xlarge, c5.xlarge, g4dn.xlarge, g5.xlarge]
-    Description: EC2 compute instance type (t3.large recommended for dual pipelines).
+    Default: t3.micro
+    AllowedValues: [t3.micro, t3.small, t3.medium, t3.large, t3.xlarge]
+    Description: EC2 compute instance type (t3.micro is 100% AWS Free Tier eligible).
 
   KeyPairName:
     Type: String
@@ -166,31 +166,38 @@ Resources:
           set -e
           exec > /var/log/user-data.log 2>&1
 
-          echo "=== [1/6] Updating packages and installing Docker ==="
+          echo "=== [1/7] Creating 4GB swapfile for Free Tier t3.micro ==="
+          dd if=/dev/zero of=/swapfile bs=1M count=4096 status=progress || fallocate -l 4G /swapfile
+          chmod 600 /swapfile
+          mkswap /swapfile
+          swapon /swapfile
+          echo "/swapfile swap swap defaults 0 0" >> /etc/fstab
+
+          echo "=== [2/7] Updating packages and installing Docker ==="
           dnf update -y
           dnf install -y docker git iptables
 
-          echo "=== [2/6] Starting Docker service ==="
+          echo "=== [3/7] Starting Docker service ==="
           systemctl enable --now docker
           usermod -aG docker ec2-user
 
-          echo "=== [3/6] Installing Docker Compose ==="
+          echo "=== [4/7] Installing Docker Compose ==="
           DOCKER_CONFIG=/usr/local/lib/docker
           mkdir -p $DOCKER_CONFIG/cli-plugins
           curl -SL https://github.com/docker/compose/releases/download/v2.24.5/docker-compose-linux-x86_64 -o $DOCKER_CONFIG/cli-plugins/docker-compose
           chmod +x $DOCKER_CONFIG/cli-plugins/docker-compose
           ln -s $DOCKER_CONFIG/cli-plugins/docker-compose /usr/bin/docker-compose
 
-          echo "=== [4/6] Port 80 HTTP traffic forwarding to 3000 ==="
+          echo "=== [5/7] Port 80 HTTP traffic forwarding to 3000 ==="
           iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 3000
 
-          echo "=== [5/6] Cloning BioCloud Workbench from GitHub ==="
+          echo "=== [6/7] Cloning BioCloud Workbench from GitHub ==="
           APP_DIR=/opt/biocloud-workbench
           mkdir -p $APP_DIR
           git clone https://github.com/Sritheeagle/bio.git $APP_DIR
           cd $APP_DIR
 
-          echo "=== [6/6] Creating production environment configuration & Starting Stack ==="
+          echo "=== [7/7] Creating production environment configuration & Starting Stack ==="
           cat << EOF > .env
           LOCAL_DEV_MODE=true
           ENVIRONMENT=production
